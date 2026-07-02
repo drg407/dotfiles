@@ -1,7 +1,7 @@
 ---
 name: spec
 description: |
-  Interview the user to produce a structured feature spec before planning or building. Use when the user wants to spec out a feature, says "let's spec this", "help me spec", "before we plan", or starts describing a feature they want to build. This runs BEFORE plan mode — it extracts the actual goal and evaluation criteria so the plan has no ambiguity.
+  Interview the user to produce a structured spec before planning or building — for features or non-trivial bug fixes. Use when the user wants to spec out a feature, fix a bug that needs reproduction/expected-vs-actual pinned down, says "let's spec this", "help me spec", "before we plan", or starts describing something they want to build or fix. This runs BEFORE plan mode — it extracts the actual goal, reproduction, and evaluation criteria so the plan has no ambiguity.
 allowed-tools:
   - AskUserQuestion
   - Write
@@ -13,12 +13,21 @@ allowed-tools:
 
 Interview the user and produce a structured spec. The spec becomes the input to plan mode — it replaces vague task descriptions with precise, unambiguous requirements.
 
+**Why this exists:** front-loading the full spec in one pass avoids the multi-turn back-and-forth that happens when requirements are revealed progressively. Underspecified prompts drawn out over several turns are the main driver of wasted rounds (and, on capped plans, wasted usage). Capture it all up front so plan/implement runs clean.
+
 ## When to use
 
 - User wants to build something non-trivial (more than a one-liner fix)
+- User is fixing a **bug** that isn't a trivial one-liner — reproduction and expected-vs-actual behavior are worth pinning down before diving in
 - User says "let's spec this out", "help me think through X", or "before we plan..."
 - You sense the request has unstated context (a goal behind the task)
 - Anything that would benefit from defined success criteria before writing code
+
+## Feature vs. bug
+
+Adapt the interview to what's being spec'd:
+- **Feature** — lead with goal-vs-task and definition of done (the default angles below).
+- **Bug fix** — lead with **reproduction** (exact steps / input that triggers it), **expected vs. actual** behavior, and **scope of the fix** (what must NOT change / regress). Definition of done becomes "the repro no longer reproduces, and X still works."
 
 ## How to run
 
@@ -55,6 +64,12 @@ Use this structure exactly:
 ## Context
 <Relevant project/stack facts that constrain the implementation. Read from CLAUDE.md.>
 
+<!-- Bug fixes only — delete this section for feature specs. -->
+## Reproduction
+<Exact steps or input that trigger the bug.>
+- Expected: <what should happen>
+- Actual: <what happens instead>
+
 ## Scope
 ### In scope
 - <bullet>
@@ -73,6 +88,10 @@ Use this structure exactly:
 
 ## Constraints
 <Things that must not change, patterns to follow, APIs to use or avoid.>
+
+## Failure Modes / Edge Cases
+<What should happen when inputs are bad, empty, or unexpected — one line per case. This is where the edge-case interview answers land; don't let them dissolve into Requirements.>
+- <case> → <expected behavior>
 
 ## Open Questions
 <Anything unresolved that plan mode will need to decide. If none, write "None.">
