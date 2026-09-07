@@ -113,6 +113,26 @@ nvfp4-fast has 80K context. Before delegating, estimate total context:
 ### Abort rule
 At any step, if the output is unhelpful or fundamentally wrong, Claude may skip remaining steps and do it directly rather than continuing the pipeline.
 
+### Running patterns as one call: qwen_team
+Patterns 1 and 2 above are also available as a single MCP tool, `qwen_team({team, task, working_directory})`, on the `qwen-pcvr` server. It runs the whole chain server-side and returns one aggregated result, instead of Claude orchestrating each step as a separate tool call:
+
+| team | steps |
+|---|---|
+| `write-review` | nvfp4 agent → q4 chat review |
+| `research-code` | agentworld agent → nvfp4 agent |
+| `research-code-review` | agentworld agent → nvfp4 agent → q4 chat review |
+| `plan-code-review` | q4 chat (plan) → nvfp4 agent (execute) → q4 chat review |
+
+Prefer `qwen_team` over manually chaining `qwen_agent`/`qwen_chat` calls when the task cleanly matches one of these presets — it saves round-trips and keeps token accounting in one place. Fall back to manual orchestration when a pattern needs a variation the presets don't cover (e.g. a custom system prompt per step, or >3 steps).
+
+Reviewer steps in `qwen_team` are given the actual changed-file contents, not just the writer agent's self-reported summary — see [[feedback-review-needs-file-contents]]. Any future review-over-agent pipeline must do the same, or the reviewer ends up rubber-stamping a description instead of the code.
+
+### Delegation visibility: qwen_stats
+`qwen_stats({window, by})` on the same server reads a JSONL log (`~/.qwen-mcp/log-YYYY-MM-DD.jsonl`, written automatically by qwen_chat/qwen_agent/qwen_team) and reports call counts, tokens, and elapsed time — grouped by tool, model, or team, over today/7d/all. Use it to check whether delegation is actually happening, not just assumed.
+
+### Enforcement: delegation reminder hook
+A Claude Code hook (`~/.claude/hooks/qwen-delegation-guard.js`, PreToolUse on `Write|Edit`) prints a one-time-escalating reminder (max 3 per session/cwd, never blocks) when a ≥20-line direct edit happens with no `mcp__qwen-pcvr__*` call yet that session. Config/doc files (`.md/.json/.yaml/...`) and anything under `.claude/` are exempt. Companion hooks: `qwen-usage-tracker.js` (PostToolUse, clears the reminder condition once a qwen tool is called) and `qwen-session-reset.js` (SessionStart, clears stale state). This is a nudge, not a gate — if the reminder fires and direct implementation is still the right call, proceed.
+
 ## Model selection cheat sheet
 
 | Task | Model | Tool | Context limit |
