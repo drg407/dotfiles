@@ -11,64 +11,55 @@ allowed-tools:
 
 # spec
 
-Interview the user and produce a structured spec. The spec becomes the input to plan mode — it replaces vague task descriptions with precise, unambiguous requirements.
-
-**Why this exists:** front-loading the full spec in one pass avoids the multi-turn back-and-forth that happens when requirements are revealed progressively. Underspecified prompts drawn out over several turns are the main driver of wasted rounds (and, on capped plans, wasted usage). Capture it all up front so plan/implement runs clean.
+Interview the user and produce a structured spec. Spec becomes input to plan mode — replaces vague task descriptions with precise, unambiguous requirements. Front-loading avoids the multi-turn back-and-forth of progressive requirement reveals.
 
 ## When to use
 
-- User wants to build something non-trivial (more than a one-liner fix)
-- User is fixing a **bug** that isn't a trivial one-liner — reproduction and expected-vs-actual behavior are worth pinning down before diving in
-- User says "let's spec this out", "help me think through X", or "before we plan..."
-- You sense the request has unstated context (a goal behind the task)
-- Anything that would benefit from defined success criteria before writing code
+- Building something non-trivial (more than a one-liner)
+- Bug fix that isn't trivial — reproduction and expected-vs-actual worth pinning down
+- User says "let's spec this", "help me think through X", "before we plan..."
+- The request has unstated context (goal behind the task)
 
 ## Feature vs. bug
 
-Adapt the interview to what's being spec'd:
-- **Feature** — lead with goal-vs-task and definition of done (the default angles below).
-- **Bug fix** — lead with **reproduction** (exact steps / input that triggers it), **expected vs. actual** behavior, and **scope of the fix** (what must NOT change / regress). Definition of done becomes "the repro no longer reproduces, and X still works."
+- **Feature** — lead with goal-vs-task and definition of done.
+- **Bug** — lead with **reproduction**, **expected vs. actual**, and **scope of the fix** (what must NOT regress). "Done" = repro no longer reproduces AND X still works.
 
 ## How to run
 
 ### Step 1 — Read context first
 
-Before asking anything, read the relevant CLAUDE.md and any files the user mentions. You need to know the project, stack, and constraints so your questions are precise, not generic.
+Before asking anything, read CLAUDE.md and any files the user mentioned. Your questions must be project-specific, not generic.
 
-### Step 2 — Conduct the interview
+### Step 2 — Interview: 3–5 targeted questions via `AskUserQuestion`
 
-Ask **3–5 targeted questions** using `AskUserQuestion`. Adapt to the project — don't ask boilerplate. Every question should have a clear reason: it either uncovers the actual goal, eliminates ambiguity, or defines a success criterion.
+Adapt to the project. Every question uncovers the actual goal, eliminates ambiguity, or defines a success criterion.
 
-Always cover these angles (but phrase them for the specific project):
+Cover these angles (phrase for the project):
+1. **Goal vs. task** — What outcome does this drive? (Why, not what.)
+2. **Definition of done** — Measurable test?
+3. **Constraints** — What must NOT change? Patterns to follow/avoid?
+4. **Scope boundary** — What's out of scope for this version?
+5. **Edge cases** — What happens on bad/empty/unexpected input?
 
-1. **Goal vs. task** — What outcome or decision does this feature drive? (Not just "what does it do" but "why does it exist")
-2. **Definition of done** — How will you know it works? What's the measurable test?
-3. **Constraints** — What must NOT change? Any existing patterns to follow or avoid?
-4. **Scope boundary** — What is explicitly out of scope for this version?
-5. **Edge cases / failure modes** — What should happen when it goes wrong?
+One question per angle. No bundling. `multiSelect: false` unless the user genuinely picks multiple things.
 
-Keep questions short. Use `multiSelect: false` unless the user genuinely needs to pick multiple things. One question per angle — don't bundle.
-
-### Step 3 — Write the spec
-
-After the interview, write the spec to a file: `~/.claude/specs/<kebab-case-feature-name>.md`
-
-Use this structure exactly:
+### Step 3 — Write to `~/.claude/specs/<kebab-name>.md`
 
 ```markdown
-# Spec: <Feature Name>
+# Spec: <Name>
 
 ## Goal
-<The actual outcome this achieves — one sentence, not a task description.>
+<Outcome achieved — one sentence, not a task description.>
 
 ## Context
-<Relevant project/stack facts that constrain the implementation. Read from CLAUDE.md.>
+<Project/stack facts that constrain the implementation. Read from CLAUDE.md.>
 
-<!-- Bug fixes only — delete this section for feature specs. -->
+<!-- Bug fixes only — delete for features. -->
 ## Reproduction
-<Exact steps or input that trigger the bug.>
+<Exact steps or input.>
 - Expected: <what should happen>
-- Actual: <what happens instead>
+- Actual: <what happens>
 
 ## Scope
 ### In scope
@@ -77,37 +68,29 @@ Use this structure exactly:
 - <bullet>
 
 ## Requirements
-<Numbered list of precise, testable requirements. Each one is a fact, not a direction.>
-1. ...
-2. ...
+1. <Precise, testable fact — not a direction.>
 
 ## Definition of Done
-<Bulleted list of measurable success criteria. Each is verifiable — not "looks good" but "X does Y when Z.">
-- [ ] ...
-- [ ] ...
+- [ ] <Verifiable: X does Y when Z. Not "looks good".>
 
 ## Constraints
-<Things that must not change, patterns to follow, APIs to use or avoid.>
+<What must not change; patterns/APIs to use or avoid.>
 
 ## Failure Modes / Edge Cases
-<What should happen when inputs are bad, empty, or unexpected — one line per case. This is where the edge-case interview answers land; don't let them dissolve into Requirements.>
 - <case> → <expected behavior>
 
 ## Open Questions
-<Anything unresolved that plan mode will need to decide. If none, write "None.">
+<Or "None.">
 ```
 
 ### Step 4 — Hand off
 
-After writing the spec file, tell the user:
-- The spec path
-- A one-line summary of what was captured
-- Suggest: "Ready for `/plan`" — or if there are open questions, surface them first
+Tell the user the spec path, one-line summary, and suggest "Ready for `/plan`" — or surface open questions first.
 
 ## Rules
 
-- Never skip the interview and jump straight to writing a spec. The interview is the point.
-- Never ask generic questions like "what's your tech stack?" — you already read CLAUDE.md.
-- If the user's request is already precise and small (a typo fix, a one-line change), say so and skip the skill.
-- The spec is a file, not a chat message. Write it with the Write tool so it persists.
-- If args are passed (e.g. `/spec add audio track switching`), use them as the starting context, not a reason to skip the interview.
+- Never skip the interview. The interview is the point.
+- No generic questions — you already read CLAUDE.md.
+- Trivial requests (typo, one-line): say so and skip the skill.
+- Spec is a file on disk, not a chat message.
+- `/spec add X` — treat args as starting context, not a reason to skip the interview.

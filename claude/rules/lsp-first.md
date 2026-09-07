@@ -1,15 +1,13 @@
 # LSP-First Navigation (CRITICAL)
 
-When cclsp MCP connected, ALL agents MUST use LSP over Grep for semantic navigation.
+When the Serena MCP server is connected, ALL agents MUST use its symbolic tools over Grep for semantic navigation.
 
-| Task | LSP Tool |
-|------|----------|
-| Definition | `find_definition` |
-| References | `find_references` |
-| Symbol search | `find_workspace_symbols` |
-| Implementations | `find_implementation` |
-| Call hierarchy | `get_incoming_calls` / `get_outgoing_calls` |
-| Type info | `get_hover` |
-| Diagnostics | `get_diagnostics` |
+| Task | Serena Tool |
+|------|-------------|
+| File/symbol structure overview | `get_symbols_overview` |
+| Find a symbol / read its body (definition) | `find_symbol` (`name_path`, `include_body`) |
+| Who references / calls a symbol | `find_referencing_symbols` |
+| Edit a symbol in place | `replace_symbol_body` / `insert_after_symbol` / `insert_before_symbol` |
+| Broad text/pattern search | `search_for_pattern` |
 
-Grep/Glob = fallback ONLY when LSP returns empty or searching non-symbol text.
+Grep/Glob = fallback ONLY when the symbolic tools return empty or you're searching non-symbol text.
