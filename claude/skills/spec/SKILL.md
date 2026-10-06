@@ -41,6 +41,7 @@ Cover these angles (phrase for the project):
 3. **Constraints** — What must NOT change? Patterns to follow/avoid?
 4. **Scope boundary** — What's out of scope for this version?
 5. **Edge cases** — What happens on bad/empty/unexpected input?
+6. **Validation** — How will you know it works? What tests, what manual checks? Plan this before writing code, not after.
 
 One question per angle. No bundling. `multiSelect: false` unless the user genuinely picks multiple things.
 
@@ -78,6 +79,13 @@ One question per angle. No bundling. `multiSelect: false` unless the user genuin
 
 ## Failure Modes / Edge Cases
 - <case> → <expected behavior>
+
+## Validation Plan
+How correctness will be verified — planned BEFORE implementation, not after.
+- **Automated tests:** <what to test, what kind (unit/integration/e2e), key assertions>
+- **Manual checks:** <exact steps to verify the feature works end-to-end>
+- **Edge case coverage:** <which edge cases from above get explicit tests>
+- **Regression guard:** <what existing behavior must still pass>
 
 ## Open Questions
 <Or "None.">
