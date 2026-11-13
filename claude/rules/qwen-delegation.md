@@ -14,7 +14,7 @@ Before delegating, classify the task:
 |---|---|---|
 | **Trivial** (<20 lines, single file, obvious fix) | Claude does it directly | typo fix, one-line rename, simple import |
 | **Simple** (single file, clear spec) | q4 writes → Claude reviews | utility function, config file, type defs |
-| **Moderate** (multi-file or needs research) | agentworld researches → q4 writes → Claude reviews | new feature with unknown API, library integration |
+| **Moderate** (multi-file or needs research) | q4 researches (`mode: "research"`) → q4 writes → Claude reviews | new feature with unknown API, library integration |
 | **Complex** (architecture, security, performance) | q4 designs → q4 implements → q4 reviews | cross-cutting refactor, auth flow, perf-critical path |
 
 **Note:** `qwen-q4-uncensored` is for the user's direct use only — Claude does not delegate to it.
@@ -26,11 +26,11 @@ Each time you classify a coding task with the table above, also call `qwen_route
 
 ## When to delegate
 
-### Research (agentworld — never for coding)
-- **Web research**: any "find out about X", "how does Y work", "what are the options for Z" → `qwen_agent` with agentworld + web_search/web_fetch
+### Research (qwen-q4, `mode: "research"`)
+- **Web research**: any "find out about X", "how does Y work", "what are the options for Z" → `qwen_agent` with `mode: "research"` (web_search/web_fetch only)
 - **Documentation lookup**: searching for API docs, library usage, configuration examples
 - **Competitive analysis**: "how do others solve this", "find similar implementations"
-- **Pre-coding research**: before implementing a feature, have agentworld search for existing patterns, gotchas, or prior art
+- **Pre-coding research**: before implementing a feature, have q4 (research mode) search for existing patterns, gotchas, or prior art
 
 ### Code writing (qwen-q4)
 - **Boilerplate and scaffolding**: generating new files, test suites, config files, type definitions
@@ -87,20 +87,18 @@ For very large tasks approaching 200K+, break them into smaller delegations rath
 
 The PCVR rig runs **one model at a time** and loads on demand — no pins, no 409s. Model switch waits for in-flight work to drain; if the wait exceeds 120s, you get 503 `queue_deadline` (retry after the in-flight work completes; first switch also pays model load: ~4-6s warm, ~14s cold). Best practice: use one model consistently per task and switch between requests, not mid-stream. Check state: `GET /health` → `loaded_model`, `in_flight`, `in_flight_model`.
 
-**Available models (2026-09-17):** `qwen-q4`, `qwen-q4-uncensored`, `agentworld`, `gemma-4-12b`, `gpt-oss-20b`. `qwen-nvfp4-fast` is **retired** (404 on request — do not use).
+**Available models (2026-11-12):** `qwen-q4`, `qwen-q4-uncensored`. **Retired** (do not use): `agentworld`, `swift15-q4`, `strata-coder` (2026-11-12), `gemma-4-12b`, `gpt-oss-20b`, `qwen-nvfp4-fast`.
 
 ## Latency awareness
 
 - q4 at ~150 t/s (with MTP): a 5K-token response takes ~33s. Fast enough for most interactive work.
-- agentworld at 230 t/s: fastest. Good for quick research.
-- gemma-4-12b / gpt-oss-20b: available but roles TBD — use when the user requests them or for experimentation.
 
 **If the user is actively waiting**, do it yourself for trivial work. q4 is fast enough for interactive coding tasks.
 
 ## Delegation patterns
 
 ### Pattern 1: Research → Code
-1. agentworld researches the topic (web_search + web_fetch)
+1. q4 researches the topic (`qwen_agent` with `mode: "research"`)
 2. Claude reviews the research and makes design decisions
 3. q4 writes the code
 4. (If >50 lines) q4 reviews the diff (separate call — fresh context)
@@ -129,11 +127,11 @@ Patterns 1 and 2 above are also available as a single MCP tool, `qwen_team({team
 | team | steps |
 |---|---|
 | `write-review` | q4 agent → q4 chat review |
-| `research-code` | agentworld agent → q4 agent |
-| `research-code-review` | agentworld agent → q4 agent → q4 chat review |
+| `research-code` | q4 research agent → q4 agent |
+| `research-code-review` | q4 research agent → q4 agent → q4 chat review |
 | `plan-code-review` | q4 chat (plan) → q4 agent (execute) → q4 chat review |
 
-**Note:** These presets may still reference nvfp4 server-side. If a team call 404s on the writer step, the server config needs updating — fall back to manual orchestration with `qwen_agent` (model: `qwen-q4`) until fixed.
+**Note:** All presets run on `qwen-q4`; research steps use the research toolset/prompt (qwen-mcp `feature/retire-agentworld`, 2026-11-12).
 
 Prefer `qwen_team` over manually chaining `qwen_agent`/`qwen_chat` calls when the task cleanly matches one of these presets — it saves round-trips and keeps token accounting in one place. Fall back to manual orchestration when a pattern needs a variation the presets don't cover (e.g. a custom system prompt per step, or >3 steps).
 
@@ -149,15 +147,14 @@ A Claude Code hook (`~/.claude/hooks/qwen-delegation-guard.js`, PreToolUse on `W
 
 | Task | Model | Tool | Context limit |
 |---|---|---|---|
-| Web search/fetch | agentworld | qwen_agent | 128K |
+| Web search/fetch | qwen-q4 (`mode: "research"`) | qwen_agent | 262K |
 | Write code | qwen-q4 | qwen_agent | 262K |
 | Review code/diffs | qwen-q4 | qwen_chat | 262K |
 | Quick question / second opinion | qwen-q4 | qwen_chat | 262K |
 | Design brainstorming | qwen-q4 | qwen_chat | 262K |
 | Codebase comprehension | qwen-q4 | qwen_agent | 262K |
 
-**Also available:** `gemma-4-12b`, `gpt-oss-20b` — roles not yet assigned. Use when the user requests them or for A/B experimentation.
-**Retired:** `qwen-nvfp4-fast` — returns 404. Do not use.
+**Retired:** `agentworld`, `swift15-q4`, `strata-coder`, `gemma-4-12b`, `gpt-oss-20b`, `qwen-nvfp4-fast`. Do not use.
 
 ## Step budget guidance
 
