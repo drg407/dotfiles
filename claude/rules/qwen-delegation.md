@@ -87,7 +87,7 @@ For very large tasks approaching 200K+, break them into smaller delegations rath
 
 The PCVR rig runs **one model at a time** and loads on demand — no pins, no 409s. Model switch waits for in-flight work to drain; if the wait exceeds 120s, you get 503 `queue_deadline` (retry after the in-flight work completes; first switch also pays model load: ~4-6s warm, ~14s cold). Best practice: use one model consistently per task and switch between requests, not mid-stream. Check state: `GET /health` → `loaded_model`, `in_flight`, `in_flight_model`.
 
-**Available models (2026-11-12):** `qwen-q4`, `qwen-q4-uncensored`. **Retired** (do not use): `agentworld`, `swift15-q4`, `strata-coder` (2026-11-12), `gemma-4-12b`, `gpt-oss-20b`, `qwen-nvfp4-fast`.
+**Available models (2026-11-26):** `strata-flash` (Qwen3.8-Flash-Next 125B MoE NVFP4 GPTQ on Strata, 262K, GPU vision; Pi's default and llama-swap's boot preload), `qwen-q4`, `qwen-q4-uncensored`. The MCP tools still run on `qwen-q4`, so a delegation after Pi use swaps models (qwen-q4 ~15-20 s; Strata back ~70-180 s). **Retired** (do not use): `agentworld`, `swift15-q4`, `strata-coder` (2026-11-12), `gemma-4-12b`, `gpt-oss-20b`, `qwen-nvfp4-fast`.
 
 ## Latency awareness
 
